@@ -63,9 +63,10 @@ export const useWebsocketsStore = defineStore('websockets', () => {
       // Connection is already established.
       if (getSocket(name)) return;
 
-      const websocketUrl = `wss://${window.location.hostname}:3000/`;
+      const isSecure = window.location.protocol === 'https:';
+      const websocketUrl = `${isSecure ? 'wss' : 'ws'}://${window.location.host}/${name}`;
 
-      const socketInstance = new WebSocket(`${websocketUrl}${name}`);
+      const socketInstance = new WebSocket(websocketUrl);
 
       socketInstance.addEventListener('open', (_) => {
         socketMap.value[name] = {socket: socketInstance, handlers: {}, isReady: false};
