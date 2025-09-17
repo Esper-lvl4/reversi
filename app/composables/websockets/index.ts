@@ -63,7 +63,7 @@ export const useWebsocketsStore = defineStore('websockets', () => {
       // Connection is already established.
       if (getSocket(name)) return;
 
-      const websocketUrl = `ws://${window.location.hostname}:3000/`;
+      const websocketUrl = `wss://${window.location.hostname}:3000/`;
 
       const socketInstance = new WebSocket(`${websocketUrl}${name}`);
 
