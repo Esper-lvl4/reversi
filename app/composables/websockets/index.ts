@@ -1,4 +1,4 @@
-import {USER_ID_STORAGE_KEY, WEBSOCKET_SERVER_URL} from './consts';
+import {USER_ID_STORAGE_KEY} from './consts';
 import type {SocketEmitInfo, SocketInstance, SocketEventHandler, SocketInstanceMap} from './types';
 import {isSocketEvent, isUserIdInfo} from './utils';
 
@@ -63,7 +63,9 @@ export const useWebsocketsStore = defineStore('websockets', () => {
       // Connection is already established.
       if (getSocket(name)) return;
 
-      const socketInstance = new WebSocket(`${WEBSOCKET_SERVER_URL}${name}`);
+      const websocketUrl = `ws://${window.location.hostname}:3000/`;
+
+      const socketInstance = new WebSocket(`${websocketUrl}${name}`);
 
       socketInstance.addEventListener('open', (_) => {
         socketMap.value[name] = {socket: socketInstance, handlers: {}, isReady: false};
