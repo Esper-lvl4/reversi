@@ -235,7 +235,7 @@ export function startGame(peer: UserPeer) {
   let reversiGameId = game.reversiGame;
 
   if (reversiGameId === undefined) {
-    reversiGameId = createReversiGame(game.id, game.players);
+    reversiGameId = createReversiGame(game);
     game.reversiGame = reversiGameId;
   }
 

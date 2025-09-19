@@ -1,7 +1,8 @@
 import type {UserPeer} from '~~/shared/types/socket-types';
 import {ADJACENCY, FIELD_HEIGHT, FIELD_WIDTH} from './consts';
 import type {ActionDirectionOptions, CellState, FieldState, ReversiGame} from './types';
-import {isMakingMoveEvent, isRefreshReversiGameEvent} from './utils';
+import {isMakingMoveEvent} from './utils';
+import type {Game} from '../lobby/types';
 
 const reversiGames: ReversiGame[] = [];
 let id = 0;
@@ -15,11 +16,11 @@ function incrementId() {
   return id++;
 }
 
-export function findReversiGame(id: number): ReversiGame | undefined {
+function findReversiGame(id: number): ReversiGame | undefined {
   return reversiGames.find((game) => game.id === id);
 }
 
-export function findReversiGameByPeer(peer: UserPeer): ReversiGame | undefined {
+function findReversiGameByPeer(peer: UserPeer): ReversiGame | undefined {
   const {userId} = peer.context;
   return reversiGames.find((game) => game.whitePlayer.id === userId || game.blackPlayer.id === userId);
 }
@@ -28,13 +29,25 @@ function getGameTopicId(reversiGame: ReversiGame): string {
   return `game-${reversiGame.lobbyGame}`;
 }
 
+function endGame(endedGame: ReversiGame) {
+  const index = reversiGames.findIndex((game) => game.id === endedGame.id);
+  if (index === -1) {
+    console.error('Game has already ended!');
+    return;
+  }
+
+  endedGame.lobbyGame.reversiGame = undefined;
+  reversiGames.splice(index, 1);
+}
+
 export function prepareReversiGameForClient(peer: UserPeer, reversiGame: ReversiGame): ClientReversiGame {
   return {
     id: reversiGame.id,
-    lobbyGame: reversiGame.lobbyGame,
+    lobbyGame: reversiGame.lobbyGame.id,
     currentTurn: reversiGame.currentTurn,
     color: reversiGame.whitePlayer.id === peer.context.userId ? 'white' : 'black',
     moves: reversiGame.moves,
+    winner: reversiGame.winner,
   };
 }
 
@@ -51,7 +64,7 @@ export function refreshReversiGame(peer: UserPeer) {
   sendEvent(peer, {event: 'refresh-reversi-game', info: prepareReversiGameForClient(peer, reversiGame)});
 }
 
-export function createReversiGame(lobbyGame: number, players: Player[]): number {
+export function createReversiGame(lobbyGame: Game): number {
   const field: FieldState = [];
 
   for (let i = 0; i < FIELD_HEIGHT; i++) {
@@ -77,8 +90,8 @@ export function createReversiGame(lobbyGame: number, players: Player[]): number 
   const game: ReversiGame = {
     id,
     lobbyGame,
-    whitePlayer: whitePlayerIndex === 0 ? players[0] : players[1],
-    blackPlayer: whitePlayerIndex === 0 ? players[1] : players[0],
+    whitePlayer: whitePlayerIndex === 0 ? lobbyGame.players[0] : lobbyGame.players[1],
+    blackPlayer: whitePlayerIndex === 0 ? lobbyGame.players[1] : lobbyGame.players[0],
 
     state: field,
     currentTurn: 'white',
@@ -127,6 +140,10 @@ export function tryMakingMove(peer: UserPeer, info: unknown) {
     event: 'refresh-reversi-game',
     info: eventInfo,
   });
+
+  if (game.winner) {
+    endGame(game);
+  }
 }
 
 function getCell(fieldState: FieldState, x: number, y: number): CellState | undefined {
@@ -202,16 +219,16 @@ function checkVictory(game: ReversiGame) {
   const halfCellCount = (FIELD_WIDTH * FIELD_HEIGHT) / 2;
 
   if (halfCellCount > whiteCount) {
-    console.log('Black won!');
+    game.winner = 'black';
     return;
   }
 
   if (halfCellCount < whiteCount) {
-    console.log('White won!');
+    game.winner = 'white';
     return;
   }
 
-  console.log('Draw!');
+  game.winner = 'draw';
   return;
 }
 
@@ -319,6 +336,8 @@ function makeMove(game: ReversiGame, x: number, y: number) {
   changeTurn(game);
   determineValidMoves(game);
   addMoveToHistory(game, x, y);
+
+  game.winner = game.currentTurn;
 }
 
 function addMoveToHistory(game: ReversiGame, x: number, y: number) {

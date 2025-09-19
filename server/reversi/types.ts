@@ -1,19 +1,20 @@
+import type {Game} from '../lobby/types';
+
 export type ReversiGame = {
   id: number;
-  lobbyGame: number;
+  lobbyGame: Game;
   whitePlayer: Player;
   blackPlayer: Player;
 
   state: FieldState;
-  currentTurn: CurrentTurn;
+  currentTurn: PlayerColors;
   movesLeft: number;
   moves: string[];
+  winner?: GameWinner;
 };
 
-export type CurrentTurn = 'white' | 'black';
-
 export type CellState = {
-  figure: CurrentTurn | null;
+  figure: PlayerColors | null;
   isValidMove: boolean;
 };
 
@@ -25,11 +26,7 @@ export type ActionDirectionOptions = {
   y: number;
   xDiff: number;
   yDiff: number;
-  ally: CurrentTurn;
-};
-
-export type RefreshReversiGameEvent = {
-  id: number;
+  ally: PlayerColors;
 };
 
 export type MakingMoveEvent = {

@@ -118,7 +118,7 @@ function joinGameWithPassword() {
       </div>
     </div>
 
-    <SimplePopup v-model="createPopup" title="Create Game" :on-confirm="tryCreatingGame">
+    <SimplePopup v-model="createPopup" title="Create Game" @confirm="tryCreatingGame">
       <template #content>
         <TextField v-model="name" v-model:error="nameValidation" autofocus label="Name" />
         <TextField v-model="password" v-model:error="passwordValidation" label="Password" />

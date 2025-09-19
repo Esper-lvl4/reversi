@@ -1,9 +1,7 @@
 import {useReversiGame} from './reversi-socket';
 
-export type CurrentTurn = 'white' | 'black';
-
 export type CellState = {
-  figure: CurrentTurn | null;
+  figure: PlayerColors | null;
   isValidMove: boolean;
 };
 
@@ -14,7 +12,7 @@ export type ActionDirectionOptions = {
   y: number;
   xDiff: number;
   yDiff: number;
-  ally: CurrentTurn;
+  ally: PlayerColors;
 };
 
 const ADJACENCY = [
@@ -35,7 +33,7 @@ export const useFieldState = () => {
   const {reversiGame, tryMakingMove} = useReversiGame();
 
   const movesLeft = useState('moves-left', () => FIELD_WIDTH * FIELD_HEIGHT - 4);
-  const currentTurn = useState<CurrentTurn>('current-turn', () => 'white');
+  const currentTurn = useState<PlayerColors>('current-turn', () => 'white');
   const processedMoves = useState<string[]>(() => []);
   const fieldState = useState('field-state', () => {
     const field: FieldState = [];
@@ -62,6 +60,32 @@ export const useFieldState = () => {
     }
 
     return field;
+  });
+
+  const pieceCount = computed(() => {
+    let white = 0,
+      black = 0;
+
+    for (const row of fieldState.value) {
+      for (const column of row) {
+        if (column.figure === 'white') {
+          white++;
+        }
+        if (column.figure === 'black') {
+          black++;
+        }
+      }
+    }
+
+    return {white, black};
+  });
+
+  const winner = computed(() => {
+    if (reversiGame.value?.winner === undefined) return;
+
+    const {winner, color} = reversiGame.value;
+
+    return winner === color;
   });
 
   watch(
@@ -167,29 +191,9 @@ export const useFieldState = () => {
     }
   }
 
-  function checkVictory() {
-    const whiteCount = fieldState.value.reduce((acc, row) => {
-      return acc + row.reduce((cellAcc, cell) => cellAcc + Number(cell.figure === 'white'), 0);
-    }, 0);
-    const halfCellCount = (FIELD_WIDTH * FIELD_HEIGHT) / 2;
-
-    if (halfCellCount > whiteCount) {
-      console.log('Black won!');
-      return;
-    }
-
-    if (halfCellCount < whiteCount) {
-      console.log('White won!');
-      return;
-    }
-
-    console.log('Draw!');
-    return;
-  }
-
   function showValidMoves(isInfiniteLoop = false) {
     if (movesLeft.value <= 0) {
-      return checkVictory();
+      return;
     }
 
     const allyFigure = currentTurn.value;
@@ -248,7 +252,7 @@ export const useFieldState = () => {
       console.warn('Current player has no valid moves! Skipping his turn');
 
       if (isInfiniteLoop) {
-        return checkVictory();
+        return;
       }
 
       changeTurn();
@@ -298,6 +302,8 @@ export const useFieldState = () => {
   return {
     fieldState,
     currentTurn,
+    pieceCount,
+    winner,
     tryMakingMove,
     isUserTurn: computed(() => reversiGame.value?.color === reversiGame.value?.currentTurn),
   };

@@ -10,20 +10,18 @@ const {
   noClose,
   closeOnConfirm,
   closeOnReject,
-  onConfirm,
-  onReject,
-  onClose,
 } = defineProps<SimplePopupProps>();
 
 const isOpen = defineModel<boolean>();
+const emit = defineEmits(['confirm', 'reject', 'close']);
 
 function close() {
   isOpen.value = false;
-  onClose && onClose();
+  emit('close');
 }
 
 function confirm() {
-  onConfirm && onConfirm();
+  emit('confirm');
 
   if (closeOnConfirm) {
     close();
@@ -31,7 +29,7 @@ function confirm() {
 }
 
 function reject() {
-  onReject && onReject();
+  emit('reject');
 
   if (closeOnReject) {
     close();
@@ -45,7 +43,14 @@ function closeWhenClickOutside() {
 </script>
 
 <template>
-  <div v-if="isOpen" class="simple-popup" @click.self="closeWhenClickOutside" @keyup.enter="confirm" @keyup.esc="close">
+  <div
+    v-if="isOpen"
+    class="simple-popup"
+    @click.stop
+    @click.self="closeWhenClickOutside"
+    @keyup.enter="confirm"
+    @keyup.esc="close"
+  >
     <div class="popup-wrapper">
       <slot :confirm="confirm" :reject="reject" :close="close">
         <button v-if="!noClose" class="close-button" @click.prevent="close" />
